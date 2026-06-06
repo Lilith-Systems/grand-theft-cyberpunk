@@ -93,12 +93,12 @@
       "bom-ref": "nvidia-gratitude-driver==0.1.0",
       "description": "Safe user-mode NVIDIA telemetry and edge-cloud routing companion.",
       "externalReferences": [
-        {
-          "comment": "PackageSource: Local",
-          "type": "distribution",
-          "url": "file:///D:/pub/nvidia_gratitude_driver"
-        }
-      ],
+              {
+                "comment": "PackageSource: Local",
+                "type": "distribution",
+                "url": "file:///local/build/nvidia_gratitude_driver"
+              }
+            ],
       "name": "nvidia-gratitude-driver",
       "type": "library",
       "version": "0.1.0"
