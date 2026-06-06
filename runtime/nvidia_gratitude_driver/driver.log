@@ -1,0 +1,7 @@
+2026-06-05 17:17:49 | INFO     | __main__ | starting
+2026-06-05 17:17:49 | INFO     | __main__ | press Ctrl+C to stop
+2026-06-05 17:37:13 | INFO     | ngd.driver | started metrics/health server
+2026-06-05 17:37:13 | INFO     | ngd.driver | starting runtime
+2026-06-05 17:37:13 | INFO     | ngd.driver | press Ctrl+C to stop
+2026-06-05 17:37:15 | DEBUG    | ngd.driver | sample complete
+2026-06-05 17:37:29 | INFO     | ngd.driver | started metrics/health server

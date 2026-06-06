@@ -1,0 +1,24 @@
+{
+  "chrome": {
+    "detected": true,
+    "gpu_process_count": 1,
+    "process_count": 27,
+    "renderer_process_count": 20,
+    "working_set_mb": 6794.9
+  },
+  "gpu": {
+    "gpu_name": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "gpu_util_pct": 0.0,
+    "mem_util_pct": 100.0,
+    "power_w": 15.493,
+    "source": "nvml",
+    "temperature_c": 41.0,
+    "ts": 1780700500.4592292,
+    "vram_free_mb": 1915.32421875,
+    "vram_total_mb": 6144.0,
+    "vram_used_mb": 4228.67578125
+  },
+  "privacy": "aggregate process and GPU telemetry only; no browser content, credentials, or URLs read",
+  "runtime_writable": true,
+  "status": "pass"
+}

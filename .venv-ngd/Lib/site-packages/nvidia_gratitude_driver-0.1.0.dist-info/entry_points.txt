@@ -1,0 +1,5 @@
+[console_scripts]
+ngd = ngd.driver:main
+ngd-diagnostics = ngd.diagnostics:main
+ngd-prompt-check = ngd.prompt_check:main
+ngd-term-events = ngd.term_events:main

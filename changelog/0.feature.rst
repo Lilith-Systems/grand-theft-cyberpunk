@@ -1,0 +1,1 @@
+Add initial nvidia-gratitude-driver package with GPU telemetry, browser monitoring, and terminal event parsing.

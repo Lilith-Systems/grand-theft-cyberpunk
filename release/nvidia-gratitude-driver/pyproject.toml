@@ -1,0 +1,96 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nvidia-gratitude-driver"
+version = "0.1.0"
+description = "Safe user-mode NVIDIA telemetry and edge-cloud routing companion."
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+dependencies = [
+  "nvidia-ml-py>=12.575.51",
+  "psutil>=5.9.0",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "pyyaml>=6.0",
+  "tomli>=2.0; python_version < \"3.11\"",
+  "structlog>=24.1",
+  "prometheus-client>=0.19",
+]
+
+[project.scripts]
+ngd = "ngd.driver:main"
+ngd-term-events = "ngd.term_events:main"
+ngd-prompt-check = "ngd.prompt_check:main"
+ngd-diagnostics = "ngd.diagnostics:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "pyright>=1.1",
+    "mypy>=1.8",
+    "twine>=5.0",
+    "build>=1.0",
+    "cyclonedx-bom>=7.0",
+    "pip-audit>=2.7",
+    "codecov>=2.1",
+    "towncrier>=23.0",
+]
+otel = [
+    "opentelemetry-api>=1.22",
+    "opentelemetry-sdk>=1.22",
+    "opentelemetry-exporter-otlp>=1.22",
+    "opentelemetry-instrumentation>=0.44",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [".venv-ngd", "release", "runtime"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+ignore_missing_imports = false
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+warn_no_return = true
+
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.10"
+pythonPlatform = "Linux"
+reportMissingTypeStubs = true
+reportUnknownMemberType = true
+reportUnknownVariableType = true
+reportUnknownParameterType = true
+reportUnknownArgumentType = true
+reportMissingTypeArgument = "warning"
+reportUnusedCallResult = "warning"
+reportUnusedImport = "warning"
+reportUnusedVariable = "warning"
+
+[tool.towncrier]
+package = "ngd"
+package_dir = "src"
+filename = "CHANGELOG.md"
+directory = "changelog"
+template = "towncrier_template.rst"
+version_format = "{version} ({project_date})"
+style = "rst"
+include_version = true
+underlines = ["=", "-", "~"]
+
+[tool.towncrier.fragment]
+changelog_dir = "changelog"

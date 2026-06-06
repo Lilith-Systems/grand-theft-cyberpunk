@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSIONS: "3.10, 3.11, 3.12"
+
+jobs:
+  lint-and-type:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install ruff mypy
+      - name: Ruff check
+        run: ruff check src/
+      - name: MyPy strict
+        run: mypy --strict src/ngd
+      - name: PyRight strict
+        run: pyright src/
+
+  test:
+    name: Test (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Run tests
+        run: |
+          pytest --cov=src/ngd --cov-report=xml --cov-fail-under=80
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: coverage-${{ matrix.os }}-${{ matrix.python-version }}
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pip-audit bandit
+      - name: pip-audit
+        run: pip-audit --desc -r requirements.txt
+      - name: Bandit
+        run: bandit -r src/ -f json -o bandit-report.json || true
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+
+  build-wheel:
+    name: Build Wheel
+    needs: [lint-and-type, test, security]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine cibuildwheel
+      - name: Build wheel
+        run: python -m build --wheel --sdist
+      - name: Check wheel
+        run: twine check dist/*
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  build-windows-wheel:
+    name: Build Windows Wheel (cibuildwheel)
+    needs: build-wheel
+    uses: ./.github/workflows/cibw.yml
+    secrets: inherit
+
+  sbom:
+    name: Generate SBOM
+    needs: build-wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cyclonedx-bom
+        run: pip install cyclonedx-bom
+      - name: Generate SBOM
+        run: |
+          cyclonedx-bom -o dist/sbom.json .
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: dist/sbom.json
+
+  release-please:
+    name: Release Please
+    needs: [build-wheel, build-windows-wheel, sbom]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: google-github-actions/release-please-action@v4
+        with:
+          release-type: python
+          package-name: nvidia-gratitude-driver
+          bump-minor-pre-release: true
+          bump-patch-for-minor-pre-release: true
+
+  sign-and-publish:
+    name: Sign & Publish
+    needs: release-please
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+      - name: Verify signatures
+        run: |
+          ls -la dist/
+      - name: Sign with cosign (keyless)
+        uses: sigstore/cosign-installer@v3
+      - name: Sign artifacts
+        run: |
+          cosign sign-blob --yes --output-signature dist/nvidia_gratitude_driver-${{ github.event.release.tag_name }}-py3-none-any.whl.sig dist/nvidia_gratitude_driver-${{ github.event.release.tag_name }}-py3-none-any.whl
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}

@@ -1,0 +1,79 @@
+version: 2
+updates:
+  # Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "pytest*"
+          - "pyright"
+          - "mypy"
+          - "twine"
+          - "build"
+          - "cyclonedx*"
+          - "pip-audit"
+          - "codecov*"
+      runtime-dependencies:
+        patterns:
+          - "nvidia-ml-py"
+          - "psutil"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "emhil"
+    assignees:
+      - "emhil"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps(dev)"
+    labels:
+      - "dependencies"
+      - "python"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+
+  # GitHub Actions workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "emhil"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # Docker dependencies (if any in the future)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "emhil"
+    commit-message:
+      prefix: "deps(docker)"
+    labels:
+      - "dependencies"
+      - "docker"
+    allow:
+      - dependency-type: "direct"

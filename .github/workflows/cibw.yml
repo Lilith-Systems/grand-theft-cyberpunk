@@ -1,0 +1,48 @@
+name: Build Windows Wheels
+
+on:
+  workflow_call:
+    secrets:
+      PYPI_API_TOKEN:
+        required: false
+
+jobs:
+  build:
+    name: Windows Wheels (${{ matrix.python }}, ${{ matrix.arch }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["cp310", "cp311", "cp312"]
+        arch: [AMD64, ARM64]
+        include:
+          - python: "cp310"
+            arch: AMD64
+          - python: "cp311"
+            arch: AMD64
+          - python: "cp312"
+            arch: AMD64
+          - python: "cp311"
+            arch: ARM64
+          - python: "cp312"
+            arch: ARM64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2
+        env:
+          CIBW_BUILD: "cp310-win_amd64 cp311-win_amd64 cp312-win_amd64 cp311-win_arm64 cp312-win_arm64"
+          CIBW_SKIP: "*-win32 *musllinux* *manylinux*"
+          CIBW_TEST_SKIP: "*"
+          CIBW_ENVIRONMENT_WINDOWS: "CIBW_BUILD_VERBOSITY=1"
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-wheels
+          path: wheelhouse/

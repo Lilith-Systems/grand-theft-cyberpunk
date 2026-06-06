@@ -1,0 +1,8 @@
+nvidia-ml-py>=12.575.51
+psutil>=5.9.0
+pydantic>=2.7
+pydantic-settings>=2.3
+pyyaml>=6.0
+tomli>=2.0; python_version < "3.11"
+structlog>=24.1
+prometheus-client>=0.19

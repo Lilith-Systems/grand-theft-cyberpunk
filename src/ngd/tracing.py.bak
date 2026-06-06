@@ -1,0 +1,173 @@
+"""
+Optional OpenTelemetry tracing hooks for NVIDIA Gratitude Driver.
+
+This module provides tracing instrumentation behind a feature flag.
+Enable with: pip install nvidia-gratitude-driver[otel]
+"""
+
+from __future__ import annotations
+
+import os
+from contextlib import contextmanager
+from typing import Generator, Optional
+
+# Lazy imports - only loaded when tracing is enabled
+_tracer: Optional[object] = None
+_meter: Optional[object] = None
+_tracing_enabled: bool = False
+
+
+def is_tracing_enabled() -> bool:
+    """Check if OpenTelemetry tracing is enabled."""
+    return _tracing_enabled
+
+
+def enable_tracing(
+    service_name: str = "nvidia-gratitude-driver",
+    endpoint: Optional[str] = None,
+    sample_rate: float = 1.0,
+) -> bool:
+    """
+    Initialize OpenTelemetry tracing.
+
+    Args:
+        service_name: Service name for traces
+        endpoint: OTLP endpoint (e.g., "http://localhost:4317")
+        sample_rate: Trace sampling rate (0.0 to 1.0)
+
+    Returns:
+        True if tracing was successfully enabled, False otherwise
+    """
+    global _tracer, _meter, _tracing_enabled
+
+    try:
+        from opentelemetry import trace, metrics
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.sdk.metrics import MeterProvider
+        from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+        from opentelemetry.trace.sampling import TraceIdRatioBased
+    except ImportError:
+        return False
+
+    # Create resource
+    resource = Resource.create({
+        "service.name": service_name,
+        "service.version": "0.1.0",
+    })
+
+    # Configure tracing
+    trace_provider = TracerProvider(
+        resource=resource,
+        sampler=TraceIdRatioBased(sample_rate),
+    )
+
+    if endpoint:
+        span_exporter = OTLPSpanExporter(endpoint=endpoint, insecure=True)
+        trace_provider.add_span_processor(BatchSpanProcessor(span_exporter))
+
+    trace.set_tracer_provider(trace_provider)
+    _tracer = trace.get_tracer(__name__)
+
+    # Configure metrics
+    if endpoint:
+        metric_exporter = OTLPMetricExporter(endpoint=endpoint, insecure=True)
+        metric_reader = PeriodicExportingMetricReader(metric_exporter, export_interval_millis=30000)
+        metric_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
+        metrics.set_meter_provider(metric_provider)
+        _meter = metrics.get_meter(__name__)
+
+    _tracing_enabled = True
+    return True
+
+
+def get_tracer():
+    """Get the OpenTelemetry tracer if enabled."""
+    return _tracer
+
+
+def get_meter():
+    """Get the OpenTelemetry meter if enabled."""
+    return _meter
+
+
+@contextmanager
+def trace_span(name: str, attributes: Optional[dict] = None) -> Generator[Optional[object], None, None]:
+    """Context manager for creating a trace span."""
+    if not _tracing_enabled or _tracer is None:
+        yield None
+        return
+
+    from opentelemetry import trace
+
+    span = _tracer.start_span(name)
+    if attributes:
+        for key, value in attributes.items():
+            span.set_attribute(key, value)
+
+    try:
+        yield span
+    except Exception as e:
+        span.record_exception(e)
+        span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
+        raise
+    finally:
+        span.end()
+
+
+def add_span_attribute(key: str, value: str | int | float | bool) -> None:
+    """Add an attribute to the current span."""
+    if not _tracing_enabled:
+        return
+    from opentelemetry import trace
+    span = trace.get_current_span()
+    if span and span.is_recording():
+        span.set_attribute(key, value)
+
+
+def record_metric(name: str, value: float, attributes: Optional[dict] = None) -> None:
+    """Record a metric value."""
+    if not _tracing_enabled or _meter is None:
+        return
+    # OpenTelemetry metrics API - create counter/histogram as needed
+    pass
+
+
+# Pre-defined spans for common operations
+@contextmanager
+def trace_gpu_sample():
+    """Trace GPU sampling operation."""
+    with trace_span("gpu.sample", {"component": "gpu_telemetry"}) as span:
+        yield span
+
+
+@contextmanager
+def trace_routing_decision(route: str, reason: str):
+    """Trace routing decision."""
+    with trace_span("router.decide", {
+        "component": "router",
+        "route": route,
+        "reason": reason,
+    }) as span:
+        yield span
+
+
+@contextmanager
+def trace_log_write(path: str):
+    """Trace log write operation."""
+    with trace_span("log.write", {"component": "logging", "path": path}) as span:
+        yield span
+
+
+@contextmanager
+def trace_http_request(method: str, path: str):
+    """Trace HTTP request."""
+    with trace_span("http.request", {
+        "component": "http",
+        "http.method": method,
+        "http.path": path,
+    }) as span:
+        yield span

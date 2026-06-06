@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*"
+           Name="NVIDIA Gratitude Driver"
+           Language="1033"
+           Version="$(var.Version)"
+           Manufacturer="NVIDIA Research"
+           UpgradeCode="12345678-1234-1234-1234-123456789012">
+
+    <Package InstallerVersion="500"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Description="Safe user-mode NVIDIA telemetry and edge-cloud routing companion"
+             Manufacturer="NVIDIA Research"
+             Comments="Windows Service for GPU telemetry and routing"
+             Keywords="NVIDIA,GPU,Telemetry,Service" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of NVIDIA Gratitude Driver is already installed."
+                  Schedule="afterInstallInitialize" />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="ProductFeature" Title="NVIDIA Gratitude Driver" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="ServiceComponent" />
+      <ComponentRef Id="EventLogComponent" />
+      <ComponentRef Id="FirewallComponent" />
+    </Feature>
+
+    <!-- Properties for service configuration -->
+    <Property Id="NGD_RUNTIME_DIR" Value="%ProgramData%\NVIDIA\GratitudeDriver" />
+    <Property Id="NGD_SERVICE_NAME" Value="NvidiaGratitudeDriver" />
+    <Property Id="NGD_DISPLAY_NAME" Value="NVIDIA Gratitude Driver" />
+    <Property Id="NGD_DESCRIPTION" Value="Safe user-mode NVIDIA GPU telemetry and edge-cloud routing companion" />
+    <Property Id="NGD_START_TYPE" Value="2" /> <!-- 2 = Auto start -->
+    <Property Id="NGD_ACCOUNT" Value="LocalSystem" />
+    <Property Id="NGD_GPU_INDEX" Value="0" />
+    <Property Id="NGD_MODE" Value="auto" />
+    <Property Id="NGD_LOG_LEVEL" Value="INFO" />
+
+    <!-- Custom actions for service install/uninstall -->
+    <Binary Id="CustomActions" SourceFile="$(var.ProjectDir)\bin\Release\net8.0\win10-x64\NvidiaGratitudeDriver.CustomActions.CA.dll" />
+
+    <CustomAction Id="InstallService" BinaryKey="CustomActions" DllEntry="InstallService" Execute="deferred" Return="check" Impersonate="no" />
+    <CustomAction Id="UninstallService" BinaryKey="CustomActions" DllEntry="UninstallService" Execute="deferred" Return="check" Impersonate="no" />
+    <CustomAction Id="StartService" BinaryKey="CustomActions" DllEntry="StartService" Execute="deferred" Return="check" Impersonate="no" />
+    <CustomAction Id="StopService" BinaryKey="CustomActions" DllEntry="StopService" Execute="deferred" Return="check" Impersonate="no" />
+
+    <InstallExecuteSequence>
+      <Custom Action="InstallService" After="InstallFiles"><![CDATA[NOT Installed]]></Custom>
+      <Custom Action="StartService" After="InstallService"><![CDATA[NOT Installed]]></Custom>
+      <Custom Action="StopService" Before="RemoveFiles"><![CDATA[Installed]]></Custom>
+      <Custom Action="UninstallService" After="StopService"><![CDATA[Installed]]></Custom>
+    </InstallExecuteSequence>
+
+    <!-- Service Installation -->
+    <Component Id="ServiceComponent" Guid="*" Directory="INSTALLFOLDER">
+      <File Id="NGD_EXE" Source="$(var.NGD_EXE_SOURCE)" KeyPath="yes" Vital="yes" />
+      <File Id="NGD_CONFIG" Source="$(var.NGD_CONFIG_SOURCE)" Vital="yes" />
+
+      <ServiceInstall Id="NGD_ServiceInstall"
+                      Type="ownProcess"
+                      Name="[NGD_SERVICE_NAME]"
+                      DisplayName="[NGD_DISPLAY_NAME]"
+                      Description="[NGD_DESCRIPTION]"
+                      Start="[NGD_START_TYPE]"
+                      Account="[NGD_ACCOUNT]"
+                      ErrorControl="normal"
+                      Interactive="no">
+        <ServiceDependency Id="DependentServices" />
+      </ServiceInstall>
+
+      <ServiceControl Id="NGD_ServiceControl"
+                      Name="[NGD_SERVICE_NAME]"
+                      Start="install"
+                      Stop="uninstall"
+                      Remove="uninstall"
+                      Wait="yes" />
+    </Component>
+
+    <!-- Event Log Registration -->
+    <Component Id="EventLogComponent" Guid="*" Directory="INSTALLFOLDER">
+      <EventSource Id="NGD_EventSource"
+                   Name="[NGD_SERVICE_NAME]"
+                   Log="Application"
+                   EventMessageFile="%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\EventLogMessages.dll"
+                   CategoryMessageFile="%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\EventLogMessages.dll"
+                   CategoryCount="8" />
+    </Component>
+
+    <!-- Firewall Rule -->
+    <Component Id="FirewallComponent" Guid="*" Directory="INSTALLFOLDER">
+      <FirewallException Id="NGD_FirewallException"
+                          Name="NVIDIA Gratitude Driver Telemetry"
+                          Description="Allows outbound telemetry for NVIDIA Gratitude Driver"
+                          Program="[INSTALLFOLDER]ngd.exe"
+                          Protocol="tcp"
+                          Direction="out"
+                          Profile="all"
+                          RemoteAddress="*" />
+    </Component>
+
+    <!-- Directory Structure -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="NVIDIA_FOLDER" Name="NVIDIA">
+          <Directory Id="INSTALLFOLDER" Name="GratitudeDriver" />
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="RuntimeDir" Guid="*">
+        <CreateFolder Directory="RUNTIME_DIR" />
+      </Component>
+    </DirectoryRef>
+
+    <Directory Id="ProgramDataFolder" Name="CommonAppData">
+      <Directory Id="NVIDIA_DATA" Name="NVIDIA">
+        <Directory Id="RUNTIME_DIR" Name="GratitudeDriver" />
+      </Directory>
+    </Directory>
+
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="MainExecutable" Guid="*">
+        <File Id="NGD_EXE_FILE" Source="$(var.NGD_EXE_SOURCE)" KeyPath="yes" />
+      </Component>
+      <Component Id="ConfigFile" Guid="*">
+        <File Id="NGD_YAML" Source="$(var.NGD_YAML_SOURCE)" />
+      </Component>
+    </ComponentGroup>
+  </Product>
+</Wix>
