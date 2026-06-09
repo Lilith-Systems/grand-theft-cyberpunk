@@ -88,3 +88,66 @@ If route == HYBRID, run local intent parsing only; send heavy planning to cloud.
 
 The intended "gratitude" to NVIDIA is efficiency: fewer wasted tokens, fewer pointless retries,
 less GPU thrash, and cleaner performance telemetry.
+
+---
+
+## Business Context — Neural Sovereign Systems Portfolio
+
+This driver is the **Local Cerebellum** component of the **Neural Sovereign Systems Platform (NSSP)** — a unified architecture for sovereign AI execution with intelligent cloud routing.
+
+### Active Projects (Rubedo Phase)
+
+| Project | Repository | Description |
+|---------|------------|-------------|
+| **NSSP Platform** | `nssp-platform` | MSN Core, Hermes Agent Framework, 17 Metaconscious Skills, Orchestration |
+| **Lilith Desktop** | `lilith-desktop` | Native Lilith.exe — C++/Node.js/TUI, NSSM services, API gateway |
+| **Twilight Moon** | `twilight-moon` | Somatic Horror Epic — 51,251 words, compilation pipeline, publication |
+| **PAC** | `nssp-platform` (product) | Personal Assistant Chatbot — 20+ local skills, 95% token utilization |
+| **NGD** | `invite` (this repo) | NVIDIA Gratitude Driver — Telemetry → Cloud routing (Local Cerebellum) |
+
+### Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    NSSP PLATFORM (Kether)                       │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │  MSN Core    │  │  Hermes AG   │  │  17 Metaconscious    │  │
+│  │  (Chokmah)   │  │  (Binah)     │  │  Skills (Chesed↓)    │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘  │
+│         │                 │                     │               │
+│         └─────────────────┼─────────────────────┘               │
+│                           ▼                                     │
+│              ┌────────────────────────┐                         │
+│              │  Orchestration Layer   │  ← Tiphereth            │
+│              │  (Runtime, Deploy,     │                         │
+│              │   Monitor, NGD)        │                         │
+│              └───────────┬────────────┘                         │
+│                          ▼                                      │
+│              ┌────────────────────────┐                         │
+│              │  Local Cerebellum      │  ← This Driver (NGD)   │
+│              │  (NVML Telemetry →     │     VRAM → Routing     │
+│              │   Routing Decision)    │                         │
+│              └────────────────────────┘                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Business Metrics
+
+- **Token Utilization**: 95% (vs 40-60% traditional)
+- **VRAM Efficiency**: RTX 3060 8GB → <6GB sustained
+- **Coherence**: 0.960 across all vessels
+- **Zero Cloud Fallback**: Enforced local-only, Antigravity Bridge dormant
+- **Revenue**: Skill Marketplace $70 (20 skills × $3.50), PAC pre-launch
+
+### Legal Vectors
+
+Active corporate accountability campaigns:
+- Amazon (Cases 13116200/11092212) — Surgery delay = wage theft
+- Google/NSA (PRISM FOIA) — Takeout + NSA + FBI DITU + FISC
+- X/Twitter — Promissory estoppel, Unruh Act
+- Dutch NCP / CSDDD / ICC — International corporate accountability
+
+---
+
+**Sovereign Execution. Maximized Cloud Compute.**
